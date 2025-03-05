@@ -76,9 +76,15 @@ export default async function getDown(arg: string, opt: Array<string>){
 
     let ID = opt['id'];
     if(!ID){
-        let allFiles = fs.readdirSync(`${dir}/${patch}/${region}/`);
-        allFiles.sort();
-        ID = Number(allFiles[0].replace(`overview_${region}_`, "").replace(".json", ""));
+        let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
+        let files = content.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+        const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+        for(let directory of dirs){
+            content = fs.readdirSync(`${dir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
+            files = files.concat(content.filter(dirent => dirent.isFile()).map(dirent => dirent.name))
+        }
+        files.sort();
+        ID = Number(files[0].replace(`overview_${region}_`, "").replace(".json", ""));
     }
 
     while(true){
