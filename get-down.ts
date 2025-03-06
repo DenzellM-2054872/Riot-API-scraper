@@ -1,6 +1,7 @@
 import axios from 'axios'
 import rateLimit from 'axios-rate-limit';
 import fs from 'fs';
+import {sortW, cleanW} from './sort-clean';
 
 export default async function getDown(arg: string, opt: Array<string>){
     const riotToken = fs.readFileSync(opt['token'],'utf8');
@@ -100,10 +101,15 @@ export default async function getDown(arg: string, opt: Array<string>){
                 break;
             }
             console.log(`Game ${response.data['metadata']['matchId']} Found!`);
-            fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
+            sortW(cleanW(response.data), `overview_${region}_${ID}.json`, `${dir}/${patch}/${region}`)
+            // fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
             
             ID -= 1;
         }catch(error){
+            if(!error.response){
+                console.error(error)
+                break
+            }
             if(error.response.status == 404){ID -= 1;}
             if(error.response.status == 401){
                 console.log("get a new key");

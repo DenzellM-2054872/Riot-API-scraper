@@ -1,6 +1,7 @@
 import axios from 'axios'
 import rateLimit from 'axios-rate-limit';
 import fs from 'fs';
+import { cleanW, sortW } from './sort-clean';
 
 export default async function getDown(arg: string, opt: Array<string>){
     const riotToken = fs.readFileSync(opt['token'],'utf8');
@@ -75,10 +76,17 @@ export default async function getDown(arg: string, opt: Array<string>){
     }
 
     let ID = opt['id'];
+
     if(!ID){
-        let allFiles = fs.readdirSync(`${dir}/${patch}/${region}/`);
-        allFiles.sort();
-        const last = allFiles.at(-1)
+        let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
+        let files = content.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+        const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+        for(let directory of dirs){
+            content = fs.readdirSync(`${dir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
+            files = files.concat(content.filter(dirent => dirent.isFile()).map(dirent => dirent.name))
+        }
+        files.sort();
+        const last = files.at(-1)
         if(!last) return;
         ID = Number(last.replace(`overview_${region}_`, "").replace(".json", ""));
     }
@@ -96,7 +104,8 @@ export default async function getDown(arg: string, opt: Array<string>){
                 break;
             }
             console.log(`Game ${response.data['metadata']['matchId']} Found!`);
-            fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
+            sortW(cleanW(response.data), `overview_${region}_${ID}.json`, `${dir}/${patch}/${region}`)
+            
             
             ID += 1;
         }catch(error){

@@ -5,40 +5,79 @@ import pako from 'pako'
     // fs.writeFileSync('test-zip.gz', zip,  {encoding: 'utf8', flag: 'w'})
     // let test = fs.readFileSync('test-zip.gz')
     // console.log(pako.inflate(test, { to: 'string' }))
-
-function clean(filePath: string){
-    // console.log(filePath)
-    let file = JSON.parse(fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' }))
-    delete file.metadata.dataVersion
-
-    delete file.info.gameId
-    delete file.info.gameName
-
-    for (let participant of file.info.participants){
-        for (let i = 0; i < 12; i++) {
-            delete participant[`PlayerScore${i}`]
+    function clean(filePath: string){
+        // console.log(filePath)
+        let file = JSON.parse(fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' }))
+        delete file.metadata.dataVersion
+    
+        delete file.info.gameId
+        delete file.info.gameName
+    
+        for (let participant of file.info.participants){
+            for (let i = 0; i < 12; i++) {
+                delete participant[`PlayerScore${i}`]
+            }
+            for (let i = 1; i <= 6; i++) {
+                delete participant[`playerAugment${i}`]
+            }
+            for(let challenge in participant.challenges){
+                if(participant.challenges[challenge] == 0)
+                delete participant.challenges[challenge]
+            }
+    
+            delete participant.eligibleForProgression
+    
+            file.info.gameEndedInEarlySurrender = participant.gameEndedInEarlySurrender
+            file.info.gameEndedInSurrender = participant.gameEndedInSurrender
+            delete participant.gameEndedInEarlySurrender
+            delete participant.gameEndedInSurrender
+            delete participant.missions
+            delete participant.teamEarlySurrendered
+    
         }
-        for (let i = 1; i <= 6; i++) {
-            delete participant[`playerAugment${i}`]
+    
+        fs.writeFileSync(filePath, JSON.stringify(file),  {encoding: 'utf8', flag: 'w'})
+    }
+    export function sortW(data: any, fileName: string, filePath: string){
+
+        let queue: string = queues[data.info.queueId].description
+    
+        if(!fs.existsSync(`${filePath}/${queue}`)){
+            fs.mkdirSync(`${filePath}/${queue}`)
         }
-        for(let challenge in participant.challenges){
-            if(participant.challenges[challenge] == 0)
-            delete participant.challenges[challenge]
+        fs.writeFileSync( `${filePath}/${queue}/${fileName}`, JSON.stringify(data))
+    }
+    export function cleanW(data: any){
+        delete data.metadata.dataVersion
+
+        delete data.info.gameId
+        delete data.info.gameName
+
+        for (let participant of data.info.participants){
+            for (let i = 0; i < 12; i++) {
+                delete participant[`PlayerScore${i}`]
+            }
+            for (let i = 1; i <= 6; i++) {
+                delete participant[`playerAugment${i}`]
+            }
+            for(let challenge in participant.challenges){
+                if(participant.challenges[challenge] == 0)
+                delete participant.challenges[challenge]
+            }
+
+            delete participant.eligibleForProgression
+
+            data.info.gameEndedInEarlySurrender = participant.gameEndedInEarlySurrender
+            data.info.gameEndedInSurrender = participant.gameEndedInSurrender
+            delete participant.gameEndedInEarlySurrender
+            delete participant.gameEndedInSurrender
+            delete participant.missions
+            delete participant.teamEarlySurrendered
         }
 
-        delete participant.eligibleForProgression
-
-        file.info.gameEndedInEarlySurrender = participant.gameEndedInEarlySurrender
-        file.info.gameEndedInSurrender = participant.gameEndedInSurrender
-        delete participant.gameEndedInEarlySurrender
-        delete participant.gameEndedInSurrender
-        delete participant.missions
-        delete participant.teamEarlySurrendered
-
+        return data;
     }
 
-    fs.writeFileSync(filePath, JSON.stringify(file),  {encoding: 'utf8', flag: 'w'})
-}
 
 function sort(filePath: string, fileName: string){
     let file = JSON.parse(fs.readFileSync(`${filePath}/${fileName}`, { encoding: 'utf8', flag: 'r' }))
