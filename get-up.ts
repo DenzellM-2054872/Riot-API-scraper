@@ -77,18 +77,23 @@ export default async function getUp(arg: string, opt: Array<string>){
 
     let ID = opt['id'];
     let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
-    let files = content.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+    let files = content.filter(dirent => dirent.isFile());
     const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+
     for(let directory of dirs){
         content = fs.readdirSync(`${dir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
-        files = files.concat(content.filter(dirent => dirent.isFile()).map(dirent => dirent.name))
+        files = files.concat(content.filter(dirent => dirent.isFile()))
     }
-    let count = files.length
+    
+    let count = 0
+    for(let file of files){
+        let data = JSON.parse(fs.readFileSync(`${file.parentPath}/${file.name}`, {encoding: "utf-8"}))
+        if(data["info"]["queueId"] == 400 || data["info"]["queueId"] == 420 || data["info"]["queueId"] == 440 || data["info"]["queueId"] == 490) count++;
+    }
+
     if(!ID){
         files.sort();
-        ID = Number(files[count - 1].replace(`overview_${region}_`, "").replace(".json", ""));
-        console.log(files[count - 1])
-        return
+        ID = Number(files[count - 1].name.replace(`overview_${region}_`, "").replace(".json", ""));
     }
 
     if(count >= 30000) return;
