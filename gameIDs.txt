@@ -1,11 +1,22 @@
-Oceania:
+Europe
+    EUW1: EUW1_7323351701
+    EUN1: EUN1_3750682703
+    RU: RU_519328729
+    ME1: ME1_9527028
+    TR1: TR1_1594992951 [missing in og dataset]
 
+Oceania
+    OC1: OC1_659216432
+    SG2: SG2_57366739
+    TW2: TW2_286093753
+    VN2: VN2_775892036
 
-Asia:
-All started
+Americas
+    NA1: NA1_5240498222
+    BR1: BR1_3072660000
+    LA1: LA1_1600915290 [missing in og dataset]
+    LA2: LA2_1489528134
 
-Americas:
-
-
-Europe:
-"TR1_1597668952"
+Asia
+    KR: KR_7533114294
+    JP1: JP1_497450692

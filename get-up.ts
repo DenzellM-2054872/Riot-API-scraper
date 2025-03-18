@@ -87,6 +87,8 @@ export default async function getUp(arg: string, opt: Array<string>){
     if(!ID){
         files.sort();
         ID = Number(files[count - 1].replace(`overview_${region}_`, "").replace(".json", ""));
+        console.log(files[count - 1])
+        return
     }
 
     if(count >= 30000) return;
