@@ -84,7 +84,7 @@ export default async function getUp(arg: string, opt: Array<string>){
         content = fs.readdirSync(`${dir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
         files = files.concat(content.filter(dirent => dirent.isFile()))
     }
-    
+
     let count = 0
     for(let file of files){
         let data = JSON.parse(fs.readFileSync(`${file.parentPath}/${file.name}`, {encoding: "utf-8"}))
@@ -92,12 +92,15 @@ export default async function getUp(arg: string, opt: Array<string>){
     }
 
     if(!ID){
-        files.sort();
-        ID = Number(files[count - 1].name.replace(`overview_${region}_`, "").replace(".json", ""));
+        files.sort(((a, b) => {
+            if(a.name > b.name) return 1
+            if(a.name < b.name) return -1
+            return 0
+        }));
+        ID = Number(files[files.length - 1].name.replace(`overview_${region}_`, "").replace(".json", ""));
     }
 
     if(count >= 30000) return;
-
     while(true){
         try{
             if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
