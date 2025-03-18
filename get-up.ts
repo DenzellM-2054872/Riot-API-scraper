@@ -1,9 +1,9 @@
 import axios from 'axios'
 import rateLimit from 'axios-rate-limit';
 import fs from 'fs';
-import { cleanW, sortW } from './sort-clean';
+import {sortW, cleanW} from './sort-clean';
 
-export default async function getDown(arg: string, opt: Array<string>){
+export default async function getUp(arg: string, opt: Array<string>){
     const riotToken = fs.readFileSync(opt['token'],'utf8');
     const inst = rateLimit(rateLimit(axios.create(), {maxRPS: 20}), {maxRequests: 100, perMilliseconds:120000});
     inst.defaults.headers.common['X-Riot-Token'] = riotToken;
@@ -76,20 +76,20 @@ export default async function getDown(arg: string, opt: Array<string>){
     }
 
     let ID = opt['id'];
-
-    if(!ID){
-        let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
-        let files = content.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
-        const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
-        for(let directory of dirs){
-            content = fs.readdirSync(`${dir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
-            files = files.concat(content.filter(dirent => dirent.isFile()).map(dirent => dirent.name))
-        }
-        files.sort();
-        const last = files.at(-1)
-        if(!last) return;
-        ID = Number(last.replace(`overview_${region}_`, "").replace(".json", ""));
+    let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
+    let files = content.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+    const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+    for(let directory of dirs){
+        content = fs.readdirSync(`${dir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
+        files = files.concat(content.filter(dirent => dirent.isFile()).map(dirent => dirent.name))
     }
+    let count = files.length
+    if(!ID){
+        files.sort();
+        ID = Number(files[count - 1].replace(`overview_${region}_`, "").replace(".json", ""));
+    }
+
+    if(count >= 30000) return;
 
     while(true){
         try{
@@ -98,25 +98,37 @@ export default async function getDown(arg: string, opt: Array<string>){
                 ID += 1;
                 continue;
             }
-
             let response = await inst.get(`/lol/match/v5/matches/${region}_${ID}`);
             if(!response.data['info']['gameVersion'].startsWith("15.4")){
-                break;
+                return;
             }
-            console.log(`Game ${response.data['metadata']['matchId']} Found!`);
+            console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);
             sortW(cleanW(response.data), `overview_${region}_${ID}.json`, `${dir}/${patch}/${region}`)
-            
+            if(response.data.queueId == 400 || response.data.queueId == 420 || response.data.queueId == 440 || response.data.queueId == 490) count++;
+            if(count > 30000) return;
+            // fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
             
             ID += 1;
         }catch(error){
-            if(error.response.status == 404){ID += 1;}
+            if(!error.response){
+                console.error(error)
+                return;
+            }
+            if(error.response.status == 404){
+                ID += 1;
+                continue;
+            }
             if(error.response.status == 401){
                 console.log("get a new key");
-                return
+                return;
             }
             if(error.response.status == 429){
-            console.log("overloaded the api whoops!")
+                console.log("overloaded the api whoops!")
+                continue;
             }
+
+            console.error(error.response.status)
+
         }
     }
     console.log(`Done!`)

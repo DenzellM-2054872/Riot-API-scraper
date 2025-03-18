@@ -1,14 +1,11 @@
 Oceania:
-"SG2_57366739"
-"VN2_775892036"
+
 
 Asia:
 All started
 
 Americas:
-"LA1_1599596304"
-"LA2_1489528134"
+
 
 Europe:
-"ME1_9502545"
 "TR1_1597668952"

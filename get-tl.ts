@@ -1,15 +1,17 @@
 import axios from 'axios'
 import rateLimit from 'axios-rate-limit';
 import fs from 'fs';
-import {sortW, cleanW} from './sort-clean';
+import {sortW} from './sort-clean';
+import queues from './queues.json'
 
-export default async function getDown(arg: string, opt: Array<string>){
+export default async function getTL(arg: string, opt: Array<string>){
     const riotToken = fs.readFileSync(opt['token'],'utf8');
     const inst = rateLimit(rateLimit(axios.create(), {maxRPS: 20}), {maxRequests: 100, perMilliseconds:120000});
     inst.defaults.headers.common['X-Riot-Token'] = riotToken;
 
     let region: string = arg;
-    let dir: string = opt['dir'];
+    let readDir: string = opt['readDir'];
+    let writeDir: string = opt['writeDir'];
     let patch: string = opt['patch'];
 
     switch (region) {
@@ -67,64 +69,56 @@ export default async function getDown(arg: string, opt: Array<string>){
             return;
     }
 
-    if(!fs.existsSync(`${dir}/${patch}`)){
-        fs.mkdirSync(`${dir}/${patch}`)
+    if(!fs.existsSync(`${writeDir}/${patch}`)){
+        fs.mkdirSync(`${writeDir}/${patch}`)
     }
 
-    if(!fs.existsSync(`${dir}/${patch}/${region}`)){
-        fs.mkdirSync(`${dir}/${patch}/${region}`)
+    if(!fs.existsSync(`${writeDir}/${patch}/${region}`)){
+        fs.mkdirSync(`${writeDir}/${patch}/${region}`)
     }
 
     let ID = opt['id'];
-    let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
-    let files = content.filter(dirent => dirent.isFile()).map(dirent => dirent.name);
+    let content = fs.readdirSync(`${readDir}/${patch}/${region}/`, { withFileTypes: true })
+    let files = content.filter(dirent => dirent.isFile());
     const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+
     for(let directory of dirs){
-        content = fs.readdirSync(`${dir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
-        files = files.concat(content.filter(dirent => dirent.isFile()).map(dirent => dirent.name))
-    }
-    let count = files.length
-    if(!ID){
-        files.sort();
-        ID = Number(files[0].replace(`overview_${region}_`, "").replace(".json", ""));
+        content = fs.readdirSync(`${readDir}/${patch}/${region}/${directory}/`, { withFileTypes: true })
+        files = files.concat(content.filter(dirent => dirent.isFile()))
     }
 
-    if(count >= 30000) return;
-
-    while(true){
+    files.sort();
+    for(let i = 0; i < files.length; i++){
         try{
-            if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
-                console.log(`overview_${region}_${ID} alredy exists!`);
-                ID -= 1;
+            ID = Number(files[i].name.replace(`overview_${region}_`, "").replace(".json", ""));
+            if (fs.existsSync(`${files[i].parentPath.replace('overview', 'timeline')}/${files[i].name.replace('overview', 'timeline')}`)){
+                console.log(`timeline_${region}_${ID} alredy exists!`);
                 continue;
             }
-            let response = await inst.get(`/lol/match/v5/matches/${region}_${ID}`);
-            if(!response.data['info']['gameVersion'].startsWith("15.4")){
-                return;
+            let response = await inst.get(`/lol/match/v5/matches/${region}_${ID}/timeline`);
+            console.log(`Game ${response.data['metadata']['matchId']} Found! Found!(${i}/${files.length}) [${Math.floor(i/(files.length/100))}%]`);
+    
+            if(!fs.existsSync(files[i].parentPath.replace('overview', 'timeline'))){
+                fs.mkdirSync(files[i].parentPath.replace('overview', 'timeline'))
             }
-            console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);
-            sortW(cleanW(response.data), `overview_${region}_${ID}.json`, `${dir}/${patch}/${region}`)
-            if(response.data.queueId == 400 || response.data.queueId == 420 || response.data.queueId == 440 || response.data.queueId == 490) count++;
-
-            if(count > 30000) return;
-            // fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
-            
-            ID -= 1;
+            fs.writeFileSync(`${files[i].parentPath.replace('overview', 'timeline')}/${files[i].name.replace('overview', 'timeline')}`, JSON.stringify(response.data))
+           
         }catch(error){
             if(!error.response){
                 console.error(error)
                 return;
             }
             if(error.response.status == 404){
-                ID -= 1;
-                continue;
+                console.log("idk how this happened lol")
+                continue
             }
-            if(error.response.status == 401){
+            if(error.response.status == 400){
                 console.log("get a new key");
                 return;
             }
             if(error.response.status == 429){
                 console.log("overloaded the api whoops!")
+                i -= 1;
                 continue;
             }
 

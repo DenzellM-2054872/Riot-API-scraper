@@ -15,6 +15,7 @@
     "axios-rate-limit": "^1.4.0",
     "commander": "^13.1.0",
     "pako": "^2.1.0",
+    "riot-api-scraper": "file:",
     "typescript": "^5.8.2"
   },
   "devDependencies": {
