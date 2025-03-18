@@ -75,7 +75,7 @@ export default async function getUp(arg: string, opt: Array<string>){
         fs.mkdirSync(`${dir}/${patch}/${region}`)
     }
 
-    let ID = opt['id'];
+    let ID = Number(opt['id']);
     let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
     let files = content.filter(dirent => dirent.isFile());
     const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
@@ -110,6 +110,7 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
             let response = await inst.get(`/lol/match/v5/matches/${region}_${ID}`);
             if(!response.data['info']['gameVersion'].startsWith("15.4")){
+                console.log(`Game ${response.data['metadata']['matchId']} is in the wrong patch`);
                 return;
             }
             console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);

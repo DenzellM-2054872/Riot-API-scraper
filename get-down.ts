@@ -75,7 +75,7 @@ export default async function getDown(arg: string, opt: Array<string>){
         fs.mkdirSync(`${dir}/${patch}/${region}`)
     }
 
-    let ID = opt['id'];
+    let ID = Number(opt['id']);
     let content = fs.readdirSync(`${dir}/${patch}/${region}/`, { withFileTypes: true })
     let files = content.filter(dirent => dirent.isFile());
     const dirs = content.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
@@ -90,15 +90,18 @@ export default async function getDown(arg: string, opt: Array<string>){
         let data = JSON.parse(fs.readFileSync(`${file.parentPath}/${file.name}`, {encoding: "utf-8"}))
         if(data["info"]["queueId"] == 400 || data["info"]["queueId"] == 420 || data["info"]["queueId"] == 440 || data["info"]["queueId"] == 490) count++;
     }
-    
+
     if(!ID){
-        files.sort();
+        files.sort(((a, b) => {
+            if(a.name > b.name) return 1
+            if(a.name < b.name) return -1
+            return 0
+        }));
         ID = Number(files[0].name.replace(`overview_${region}_`, "").replace(".json", ""));
     }
 
     if(count >= 30000) return;
-
-  while(true){
+    while(true){
         try{
             if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
                 console.log(`overview_${region}_${ID} alredy exists!`);
@@ -107,11 +110,12 @@ export default async function getDown(arg: string, opt: Array<string>){
             }
             let response = await inst.get(`/lol/match/v5/matches/${region}_${ID}`);
             if(!response.data['info']['gameVersion'].startsWith("15.4")){
+                console.log(`Game ${response.data['metadata']['matchId']} is in the wrong patch`);
                 return;
             }
             console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);
             sortW(cleanW(response.data), `overview_${region}_${ID}.json`, `${dir}/${patch}/${region}`)
-            if(response.data.queueId == 400 || response.data.queueId == 420 || response.data.queueId == 440 || response.data.queueId == 490) count++;
+            if(response.data.info.queueId == 400 || response.data.info.queueId == 420 || response.data.info.queueId == 440 || response.data.info.queueId == 490) count++;
             if(count > 30000) return;
             // fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
             
@@ -138,6 +142,5 @@ export default async function getDown(arg: string, opt: Array<string>){
 
         }
     }
- 
     console.log(`Done!`)
 }
