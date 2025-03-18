@@ -114,7 +114,7 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
             console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);
             sortW(cleanW(response.data), `overview_${region}_${ID}.json`, `${dir}/${patch}/${region}`)
-            if(response.data.queueId == 400 || response.data.queueId == 420 || response.data.queueId == 440 || response.data.queueId == 490) count++;
+            if(response.data.info.queueId == 400 || response.data.info.queueId == 420 || response.data.info.queueId == 440 || response.data.info.queueId == 490) count++;
             if(count > 30000) return;
             // fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
             
