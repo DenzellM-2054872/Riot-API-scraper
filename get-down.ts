@@ -129,7 +129,7 @@ export default async function getDown(arg: string, opt: Array<string>){
                 ID -= 1;
                 continue;
             }
-            if(error.response.status == 401){
+            if(error.response.status == 400){
                 console.log("get a new key");
                 return;
             }
