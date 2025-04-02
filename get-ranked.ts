@@ -2,8 +2,9 @@ import axios from 'axios'
 import rateLimit from 'axios-rate-limit';
 import fs from 'fs';
 import {sortW, cleanW, rankedSortW, rankedCleanW} from './sort-clean';
+import moment from 'moment';
 
-let yesterday: number = 1743588000
+let yesterday: number = moment().subtract(12, 'hours').unix()
 
 const ranks = [
     "IRON",
