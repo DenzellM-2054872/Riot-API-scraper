@@ -95,51 +95,17 @@ export default async function getRanked(arg: string, opt: Array<string>){
         fs.mkdirSync(`${dir}/${patch}/${region}/games`)
     }
 
-   try{
-    if(!fs.existsSync(`${dir}/${patch}/${region}/MASTER_page.json`)){
-        console.log("Gathering Master data")
-        fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": 1}")
-        let mastersResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5`)
-        console.log("got players")
-        for(let master of mastersResponse.data["entries"]){
-            let gamesResponse = await inst.get(`/lol/match/v5/matches/by-puuid/${master['puuid']}/ids?queue=420&start=0&count=5`)
-            let games = gamesResponse.data
-            for(let game of games){
-                if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
-                    console.log("Dupe game found!")
-                    continue
-                }
-                console.log(`collecting ${game}`)
-                let gameResponse = await inst.get(`/lol/match/v5/matches/${game}`)
-                rankedSortW((await rankedCleanW(gameResponse.data, region, inst)), region, `${dir}/${patch}/${region}/games`)
-            }
-        }
-    }
-   }catch(error){
-        if(!error.response){
-            console.error(error)
-            return;
-        }
-        if(error.response.status == 400){
-            console.log("get a new key");
-            return;
-        }
-        if(error.response.status == 429){
-            console.log("overloaded the api this messed up the flow please restart")
-            return;
-        }
-        console.error(error.response.data)
-        return
-    }
-
-    try{
-        if(!fs.existsSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`)){
-            console.log("Gathering Grandmaster data")
-            fs.writeFileSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`, "{\"last_page\": 1}")
-            let grandmastersResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5`)
-            for(let grandmaster of grandmastersResponse.data["entries"]){
-                let gamesResponse = await inst.get(`/lol/match/v5/matches/by-puuid/${grandmaster['puuid']}/ids?queue=420&start=0&count=5`)
-                for(let game of gamesResponse.data){
+    if(!fs.existsSync(`${dir}/${patch}/${region}/MASTER_page.json`) || JSON.parse(fs.readFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, { encoding: 'utf8', flag: 'r' }))['last_page'] != -1){
+            while(true){
+            try{
+            console.log("Gathering Master data")
+            fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": 1}")
+            let mastersResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5`)
+            console.log("got players")
+            for(let master of mastersResponse.data["entries"]){
+                let gamesResponse = await inst.get(`/lol/match/v5/matches/by-puuid/${master['puuid']}/ids?queue=420&start=0&count=5`)
+                let games = gamesResponse.data
+                for(let game of games){
                     if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
                         console.log("Dupe game found!")
                         continue
@@ -149,23 +115,69 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     rankedSortW((await rankedCleanW(gameResponse.data, region, inst)), region, `${dir}/${patch}/${region}/games`)
                 }
             }
+            fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": -1}")
+            break
+            }
+
+            catch(error){
+                if(!error.response){
+                    console.error(error)
+                    return;
+                }
+                if(error.response.status == 400){
+                    console.log("get a new key");
+                    return;
+                }
+                if(error.response.status == 429){
+                    console.log("overloaded the api restarting rank")
+                    continue;
+                }
+                console.error(error.response.data)
+                return
+            }
         }
-    
-    }catch(error){
-        if(!error.response){
-            console.error(error)
-            return;
-        }
-        if(error.response.status == 400){
-            console.log("get a new key");
-            return;
-        }
-        if(error.response.status == 429){
-            console.log("overloaded the api this messed up the flow please restart")
-            return;
-        }
-        console.error(error.response.data)
     }
+
+    if(!fs.existsSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`) || JSON.parse(fs.readFileSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`, { encoding: 'utf8', flag: 'r' }))['last_page'] != -1){
+        while(true){
+            try{
+                console.log("Gathering Grandmaster data")
+                fs.writeFileSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`, "{\"last_page\": 1}")
+                let grandmastersResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5`)
+                for(let grandmaster of grandmastersResponse.data["entries"]){
+                    let gamesResponse = await inst.get(`/lol/match/v5/matches/by-puuid/${grandmaster['puuid']}/ids?queue=420&start=0&count=5`)
+                    for(let game of gamesResponse.data){
+                        if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
+                            console.log("Dupe game found!")
+                            continue
+                        }
+                        console.log(`collecting ${game}`)
+                        let gameResponse = await inst.get(`/lol/match/v5/matches/${game}`)
+                        rankedSortW((await rankedCleanW(gameResponse.data, region, inst)), region, `${dir}/${patch}/${region}/games`)
+                    }
+                }
+                fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": -1}")
+                break
+
+            }catch(error){
+                if(!error.response){
+                    console.error(error)
+                    return;
+                }
+                if(error.response.status == 400){
+                    console.log("get a new key");
+                    return;
+                }
+                if(error.response.status == 429){
+                    console.log("overloaded the api restarting rank")
+                    continue;
+                }
+                console.error(error.response.data)
+                return;
+            }
+        }
+    }
+    
 
     for(let rank of ranks){
         for(let subrank of subranks){
