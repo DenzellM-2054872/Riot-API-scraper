@@ -214,7 +214,6 @@ export default async function getRanked(arg: string, opt: Array<string>){
     }
 
     let min_page = Infinity
-    console.log(pages)
     for(let rank in pages){
         if(min_page < pages[rank]) min_page = pages[rank]
     }
