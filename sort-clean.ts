@@ -1,6 +1,7 @@
 import fs from 'fs';
 import queues from './queues.json'
 import pako from 'pako'
+import { RateLimitedAxiosInstance } from 'axios-rate-limit';
     // let zip = pako.deflate(clean(`test.json`))
     // fs.writeFileSync('test-zip.gz', zip,  {encoding: 'utf8', flag: 'w'})
     // let test = fs.readFileSync('test-zip.gz')
@@ -65,6 +66,56 @@ import pako from 'pako'
                 delete participant.challenges[challenge]
             }
 
+            delete participant.eligibleForProgression
+
+            data.info.gameEndedInEarlySurrender = participant.gameEndedInEarlySurrender
+            data.info.gameEndedInSurrender = participant.gameEndedInSurrender
+            delete participant.gameEndedInEarlySurrender
+            delete participant.gameEndedInSurrender
+            delete participant.missions
+            delete participant.teamEarlySurrendered
+        }
+
+        return data;
+    }
+
+    export function rankedSortW(data: any, region: string, filePath: string){
+        fs.writeFileSync(`${filePath}/overview_${region}_${data['info']['gameId']}.json`, JSON.stringify(data))
+    }
+
+    export async function rankedCleanW(data: any, region: string, inst: RateLimitedAxiosInstance){
+        delete data.metadata.dataVersion
+
+        delete data.info.gameName
+
+        for (let participant of data.info.participants){
+            for (let i = 0; i < 12; i++) {
+                delete participant[`PlayerScore${i}`]
+            }
+            for (let i = 1; i <= 6; i++) {
+                delete participant[`playerAugment${i}`]
+            }
+            for(let challenge in participant.challenges){
+                if(participant.challenges[challenge] == 0)
+                delete participant.challenges[challenge]
+            }
+
+            let rankResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-puuid/${participant.puuid}`)
+            let Solo5v5 : (undefined | any) = undefined 
+            for(let rank of rankResponse.data){
+                if(rank.queueType == "RANKED_SOLO_5x5")
+                    Solo5v5 = rank
+            }
+
+            if(Solo5v5){
+                participant.tier = Solo5v5.tier
+                participant.rank = Solo5v5.rank
+            }
+
+
+            
+            let masteryResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${participant.puuid}/by-champion/${participant.championId}`)
+            participant.championMastery = masteryResponse.data.championPoints
             delete participant.eligibleForProgression
 
             data.info.gameEndedInEarlySurrender = participant.gameEndedInEarlySurrender

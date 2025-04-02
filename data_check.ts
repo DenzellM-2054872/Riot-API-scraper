@@ -106,7 +106,9 @@ function addLaneWinrate(champ: string, opp_champ: string, lane: string, gameMode
     if(win) laneWR['global'][champ][lane][opp_champ].wins++
     else laneWR['global'][champ][lane][opp_champ].losses++
 }
+
 globalInit();
+
 for(let region of dirs){
     console.log(`reading: ${region} data!`)
 
