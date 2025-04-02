@@ -100,7 +100,7 @@ import { RateLimitedAxiosInstance } from 'axios-rate-limit';
                 delete participant.challenges[challenge]
             }
 
-            let rankResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-puuid/${participant.puuid}`)
+            let rankResponse = await inst.get(`/lol/league/v4/entries/by-puuid/${participant.puuid}`)
             let Solo5v5 : (undefined | any) = undefined 
             for(let rank of rankResponse.data){
                 if(rank.queueType == "RANKED_SOLO_5x5")
@@ -114,7 +114,7 @@ import { RateLimitedAxiosInstance } from 'axios-rate-limit';
 
 
             
-            let masteryResponse = await inst.get(`https://${region.toLowerCase()}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${participant.puuid}/by-champion/${participant.championId}`)
+            let masteryResponse = await inst.get(`/lol/champion-mastery/v4/champion-masteries/by-puuid/${participant.puuid}/by-champion/${participant.championId}`)
             participant.championMastery = masteryResponse.data.championPoints
             delete participant.eligibleForProgression
 
