@@ -136,6 +136,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     return;
                 }
                 if(error.response.status == 400){
+                    console.error(error.response.data)
                     console.log("get a new key");
                     return;
                 }
@@ -149,7 +150,6 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     continue;
                 }
                 console.error(error.response.status)
-                return
             }
         }
     }
@@ -183,6 +183,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     return;
                 }
                 if(error.response.status == 400){
+                    console.error(error.response.data)
                     console.log("get a new key");
                     return;
                 }
@@ -196,7 +197,6 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     continue;
                 }
                 console.error(error.response.data)
-                return;
             }
         }
     }
@@ -208,12 +208,13 @@ export default async function getRanked(arg: string, opt: Array<string>){
                 fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, "{\"last_page\": 1}")
                 pages[`${rank}${subrank}`] = 1
             }else{
-                pages[`${rank}${subrank}`] = JSON.parse(fs.readFileSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`, { encoding: 'utf8', flag: 'r' }))['last_page']
+                pages[`${rank}${subrank}`] = JSON.parse(fs.readFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, { encoding: 'utf8', flag: 'r' }))['last_page']
             }
         }
     }
 
     let min_page = Infinity
+    console.log(pages)
     for(let rank in pages){
         if(min_page < pages[rank]) min_page = pages[rank]
     }
@@ -240,8 +241,9 @@ export default async function getRanked(arg: string, opt: Array<string>){
                         }
                          yesterday = moment().subtract(12, 'hours').unix()
                     }
+                    console.log(`finished ${rank} ${subrank} page ${pages[`${rank}${subrank}`]}`)
                     pages[`${rank}${subrank}`]++
-                    fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, JSON.stringify(pages[`${rank}${subrank}`]))
+                    fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, `{\"last_page\": ${JSON.stringify(pages[`${rank}${subrank}`])}}`)
                 }
             }
             min_page++
@@ -251,6 +253,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                 return;
             }
             if(error.response.status == 400){
+                console.error(error.response.data)
                 console.log("get a new key");
                 return;
             }
