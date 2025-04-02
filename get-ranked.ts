@@ -142,7 +142,12 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     console.log("overloaded the api restarting rank")
                     continue;
                 }
-                console.error(error.response.data)
+                if(error.response.status == 504){
+                    console.log("idk what this one is")
+                    await new Promise(f => setTimeout(f, 1000))
+                    continue;
+                }
+                console.error(error.response.status)
                 return
             }
         }
@@ -181,6 +186,11 @@ export default async function getRanked(arg: string, opt: Array<string>){
                 }
                 if(error.response.status == 429){
                     console.log("overloaded the api restarting rank")
+                    continue;
+                }
+                if(error.response.status == 504){
+                    console.log("idk what this one is")
+                    await new Promise(f => setTimeout(f, 1000))
                     continue;
                 }
                 console.error(error.response.data)
@@ -245,7 +255,11 @@ export default async function getRanked(arg: string, opt: Array<string>){
                 console.log("overloaded the api restarting page")
                 continue;
             }
-
+            if(error.response.status == 504){
+                console.log("idk what this one is")
+                await new Promise(f => setTimeout(f, 1000))
+                continue;
+            }
             console.error(error.response.data)
         }
     }
