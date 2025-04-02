@@ -188,20 +188,31 @@ export default async function getRanked(arg: string, opt: Array<string>){
         }
     }
     
-
+    let pages = {}
     for(let rank of ranks){
         for(let subrank of subranks){
-            if (!fs.existsSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`))
-            fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, "{\"last_page\": 1}")
+            if (!fs.existsSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`)){
+                fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, "{\"last_page\": 1}")
+                pages[`${rank}${subrank}`] = 1
+            }else{
+                pages[`${rank}${subrank}`] = JSON.parse(fs.readFileSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`, { encoding: 'utf8', flag: 'r' }))['last_page']
+            }
         }
     }
+
+    let min_page = Infinity
+    for(let rank in pages){
+        if(min_page < pages[rank]) min_page = pages[rank]
+    }
+
+
 
     while(true){
         try{
             for(let rank of ranks){
                 for(let subrank of subranks){
-                    let metadata = JSON.parse(fs.readFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, { encoding: 'utf8', flag: 'r' }))
-                    let playerResponse = await minor_inst.get(`/lol/league/v4/entries/RANKED_SOLO_5x5/${rank}/${subrank}?page=${metadata.last_page}`)
+                    if(pages[`${rank}${subrank}`] > min_page) continue;
+                    let playerResponse = await minor_inst.get(`/lol/league/v4/entries/RANKED_SOLO_5x5/${rank}/${subrank}?page=${pages[`${rank}${subrank}`]}`)
                     for(let player of playerResponse.data){
                         let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${player['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
                         for(let game of gamesResponse.data){
@@ -215,10 +226,11 @@ export default async function getRanked(arg: string, opt: Array<string>){
                             rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                         }
                     }
-                    metadata.last_page++
-                    fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, JSON.stringify(metadata))
+                    pages[`${rank}${subrank}`]++
+                    fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, JSON.stringify(pages[`${rank}${subrank}`]))
                 }
             }
+            min_page++
         }catch(error){
             if(!error.response){
                 console.error(error)
