@@ -140,6 +140,10 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     console.log("get a new key");
                     return;
                 }
+                if(error.response.status == 404){
+                    console.error(error.response.data)
+                    continue;
+                }
                 if(error.response.status == 429){
                     console.log("overloaded the api restarting rank")
                     continue;
@@ -187,6 +191,10 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     console.log("get a new key");
                     return;
                 }
+                if(error.response.status == 404){
+                    console.error(error.response.data)
+                    continue;
+                }
                 if(error.response.status == 429){
                     console.log("overloaded the api restarting rank")
                     continue;
@@ -215,18 +223,29 @@ export default async function getRanked(arg: string, opt: Array<string>){
 
     let min_page = Infinity
     for(let rank in pages){
-        if(min_page < pages[rank]) min_page = pages[rank]
+        if(min_page > pages[rank]) min_page = pages[rank]
     }
-
-
+    let lastPlayer: string | undefined = undefined
+    let recovery: boolean = false
 
     while(true){
-        try{
-            for(let rank of ranks){
-                for(let subrank of subranks){
-                    if(pages[`${rank}${subrank}`] > min_page) continue;
+        for(let rank of ranks){
+            for(let subrank of subranks){
+                if(pages[`${rank}${subrank}`] > min_page){
+                    console.log(`skipping ${rank} ${subrank} page ${pages[`${rank}${subrank}`]}`)
+                    continue;
+                }
+                try{
+                    
                     let playerResponse = await minor_inst.get(`/lol/league/v4/entries/RANKED_SOLO_5x5/${rank}/${subrank}?page=${pages[`${rank}${subrank}`]}`)
                     for(let player of playerResponse.data){
+                        if(recovery && player['puuid'] != lastPlayer){
+                            console.log(`skipping player`)
+                            continue
+                        }
+
+                        recovery = false
+                        lastPlayer = player['puuid']
                         let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${player['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
                         for(let game of gamesResponse.data){
                             if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
@@ -240,33 +259,40 @@ export default async function getRanked(arg: string, opt: Array<string>){
                         }
                          yesterday = moment().subtract(12, 'hours').unix()
                     }
+                    lastPlayer = undefined
                     console.log(`finished ${rank} ${subrank} page ${pages[`${rank}${subrank}`]}`)
                     pages[`${rank}${subrank}`]++
-                    fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, `{\"last_page\": ${JSON.stringify(pages[`${rank}${subrank}`])}}`)
+                    fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, `{\"last_page\": ${(pages[`${rank}${subrank}`])}}`)
+                    
+                }catch(error){
+                    if(!error.response){
+                        console.error(error)
+                        return;
+                    }
+                    if(error.response.status == 400){
+                        console.error(error.response.data)
+                        console.log("get a new key");
+                        return;
+                    }
+                    if(error.response.status == 404){
+                        console.error(error.response.data)
+                        continue;
+                    }
+                    if(error.response.status == 429){
+                        console.log("overloaded the api restarting page")
+                        recovery = true
+                        continue;
+                    }
+                    if(error.response.status == 504){
+                        console.log("idk what this one is")
+                        await new Promise(f => setTimeout(f, 1000))
+                        continue;
+                    }
+                    console.error(error.response.data)
                 }
             }
-            min_page++
-        }catch(error){
-            if(!error.response){
-                console.error(error)
-                return;
-            }
-            if(error.response.status == 400){
-                console.error(error.response.data)
-                console.log("get a new key");
-                return;
-            }
-            if(error.response.status == 429){
-                console.log("overloaded the api restarting page")
-                continue;
-            }
-            if(error.response.status == 504){
-                console.log("idk what this one is")
-                await new Promise(f => setTimeout(f, 1000))
-                continue;
-            }
-            console.error(error.response.data)
         }
+        min_page++
     }
     console.log(`Done!`)
 }
