@@ -37,7 +37,7 @@ program.command("get-ranked")
     .description("Will collect all the league of legends game overviews by getting the 5 last games from all players in each rank")
     .argument("<region>", "the region you want to collect the games of")
     .option("-d, --dir [path]", "the directory to which to write the files", "overview/")
-    .option("-p, --patch [patch]", "the patch nr of games you want to collect", "15.6")
+    .option("-p, --patch [patch]", "the patch nr of games you want to collect", "15.7")
     .option("-t, --token [path]", "the file for your api token", "api_key.txt")
     .action((str, options) => {getRanked(str, options)});
 

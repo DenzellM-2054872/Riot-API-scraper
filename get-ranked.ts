@@ -2,6 +2,9 @@ import axios from 'axios'
 import rateLimit from 'axios-rate-limit';
 import fs from 'fs';
 import {sortW, cleanW, rankedSortW, rankedCleanW} from './sort-clean';
+
+let yesterday: number = 1743588000
+
 const ranks = [
     "IRON",
     "BRONZE",
@@ -108,7 +111,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
             let mastersResponse = await minor_inst.get(`/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5`)
             console.log("got players")
             for(let master of mastersResponse.data["entries"]){
-                let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${master['puuid']}/ids?queue=420&start=0&count=5`)
+                let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${master['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
                 let games = gamesResponse.data
                 for(let game of games){
                     if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
@@ -117,6 +120,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     }
                     console.log(`collecting ${game}`)
                     let gameResponse = await major_inst.get(`/lol/match/v5/matches/${game}`)
+                    if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                     rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                 }
             }
@@ -150,7 +154,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                 fs.writeFileSync(`${dir}/${patch}/${region}/GRANDMASTER_page.json`, "{\"last_page\": 1}")
                 let grandmastersResponse = await minor_inst.get(`/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5`)
                 for(let grandmaster of grandmastersResponse.data["entries"]){
-                    let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${grandmaster['puuid']}/ids?queue=420&start=0&count=5`)
+                    let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${grandmaster['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
                     for(let game of gamesResponse.data){
                         if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
                             console.log("Dupe game found!")
@@ -158,6 +162,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                         }
                         console.log(`collecting ${game}`)
                         let gameResponse = await major_inst.get(`/lol/match/v5/matches/${game}`)
+                        if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                         rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                     }
                 }
@@ -198,7 +203,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     let metadata = JSON.parse(fs.readFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, { encoding: 'utf8', flag: 'r' }))
                     let playerResponse = await minor_inst.get(`/lol/league/v4/entries/RANKED_SOLO_5x5/${rank}/${subrank}?page=${metadata.last_page}`)
                     for(let player of playerResponse.data){
-                        let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${player['puuid']}/ids?queue=420&start=0&count=5`)
+                        let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${player['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
                         for(let game of gamesResponse.data){
                             if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
                                 console.log("Dupe game found!")
@@ -206,6 +211,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                             }
                             console.log(`collecting ${game}`)
                             let gameResponse = await major_inst.get(`/lol/match/v5/matches/${game}`)
+                            if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                             rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                         }
                     }
