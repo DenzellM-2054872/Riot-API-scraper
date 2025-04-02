@@ -124,6 +124,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                     rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                 }
+                yesterday = moment().subtract(12, 'hours').unix()
             }
             fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": -1}")
             break
@@ -171,6 +172,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                         if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                         rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                     }
+                    yesterday = moment().subtract(12, 'hours').unix()
                 }
                 fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": -1}")
                 break
@@ -236,6 +238,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                             if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                             rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                         }
+                         yesterday = moment().subtract(12, 'hours').unix()
                     }
                     pages[`${rank}${subrank}`]++
                     fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, JSON.stringify(pages[`${rank}${subrank}`]))
