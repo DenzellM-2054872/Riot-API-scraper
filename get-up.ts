@@ -1,12 +1,18 @@
 import axios from 'axios'
 import rateLimit from 'axios-rate-limit';
 import fs from 'fs';
-import {sortW, cleanW} from './sort-clean';
+import {sortW, cleanW, rankedSortW, rankedCleanW} from './sort-clean';
+import moment from 'moment';
 
 export default async function getUp(arg: string, opt: Array<string>){
+    let yesterday: number = moment().subtract(24, 'hours').unix()
     const riotToken = fs.readFileSync(opt['token'],'utf8');
-    const inst = rateLimit(rateLimit(axios.create(), {maxRPS: 20}), {maxRequests: 100, perMilliseconds:120000});
-    inst.defaults.headers.common['X-Riot-Token'] = riotToken;
+    const major_inst = rateLimit(rateLimit(axios.create(), {maxRPS: 20}), {maxRequests: 100, perMilliseconds:120000});
+    const minor_inst = rateLimit(rateLimit(axios.create(), {maxRPS: 15}), {maxRequests: 90, perMilliseconds:120000});
+
+    major_inst.defaults.headers.common['X-Riot-Token'] = riotToken;
+    minor_inst.defaults.headers.common['X-Riot-Token'] = riotToken;
+    
 
     let region: string = arg;
     let dir: string = opt['dir'];
@@ -14,58 +20,59 @@ export default async function getUp(arg: string, opt: Array<string>){
 
     switch (region) {
         case "EUW1":
-            inst.defaults.baseURL = 'https://europe.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://europe.api.riotgames.com';
             break;
         case "EUN1":
-            inst.defaults.baseURL = 'https://europe.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://europe.api.riotgames.com';
             break;
         case "RU":
-            inst.defaults.baseURL = 'https://europe.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://europe.api.riotgames.com';
             break;
         case "TR1":
-            inst.defaults.baseURL = 'https://europe.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://europe.api.riotgames.com';
             break;
         case "ME1":
-            inst.defaults.baseURL = 'https://europe.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://europe.api.riotgames.com';
             break;
 
         case "OC1":
-            inst.defaults.baseURL = 'https://sea.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://sea.api.riotgames.com';
             break
         case "SG2":
-            inst.defaults.baseURL = 'https://sea.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://sea.api.riotgames.com';
             break
         case "TW2":
-            inst.defaults.baseURL = 'https://sea.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://sea.api.riotgames.com';
             break
         case "VN2":
-            inst.defaults.baseURL = 'https://sea.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://sea.api.riotgames.com';
             break
 
         case "NA1":
-            inst.defaults.baseURL = 'https://americas.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://americas.api.riotgames.com';
             break
         case "BR1":
-            inst.defaults.baseURL = 'https://americas.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://americas.api.riotgames.com';
             break
         case "LA1":
-            inst.defaults.baseURL = 'https://americas.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://americas.api.riotgames.com';
             break
         case "LA2":
-            inst.defaults.baseURL = 'https://americas.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://americas.api.riotgames.com';
             break
 
         case "KR":
-            inst.defaults.baseURL = 'https://asia.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://asia.api.riotgames.com';
             break
         case "JP1":
-            inst.defaults.baseURL = 'https://asia.api.riotgames.com';
+            major_inst.defaults.baseURL = 'https://asia.api.riotgames.com';
             break
 
         default:
             console.log("region not recognised");
             return;
     }
+    minor_inst.defaults.baseURL = `https://${region.toLowerCase()}.api.riotgames.com`;
 
     if(!fs.existsSync(`${dir}/${patch}`)){
         fs.mkdirSync(`${dir}/${patch}`)
@@ -86,18 +93,18 @@ export default async function getUp(arg: string, opt: Array<string>){
     }
 
     let count = 0
-    for(let file of files){
+    for(let file of content){
         let data = JSON.parse(fs.readFileSync(`${file.parentPath}/${file.name}`, {encoding: "utf-8"}))
         if(data["info"]["queueId"] == 400 || data["info"]["queueId"] == 420 || data["info"]["queueId"] == 440 || data["info"]["queueId"] == 490) count++;
     }
 
     if(!ID){
-        files.sort(((a, b) => {
+        content.sort(((a, b) => {
             if(a.name > b.name) return 1
             if(a.name < b.name) return -1
             return 0
         }));
-        ID = Number(files[files.length - 1].name.replace(`overview_${region}_`, "").replace(".json", ""));
+        ID = Number(content[content.length - 1].name.replace(`overview_${region}_`, "").replace(".json", ""));
     }
 
     if(count >= 30000) return;
@@ -108,18 +115,25 @@ export default async function getUp(arg: string, opt: Array<string>){
                 ID += 1;
                 continue;
             }
-            let response = await inst.get(`/lol/match/v5/matches/${region}_${ID}`);
-            if(!response.data['info']['gameVersion'].startsWith("15.4")){
-                console.log(`Game ${response.data['metadata']['matchId']} is in the wrong patch`);
-                return;
+
+            let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
+            if(response.data['info']['gameCreation'] < yesterday){
+                console.log("Making a biiig jump!")
+                ID += 100
             }
+
+            if(response.data['info']['queueId'] != 420){
+                console.log("*comedicaly loud buzzer noise*")
+                ID += 1;
+                continue;
+            }
+
             console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);
-            sortW(cleanW(response.data), `overview_${region}_${ID}.json`, `${dir}/${patch}/${region}`)
-            if(response.data.info.queueId == 400 || response.data.info.queueId == 420 || response.data.info.queueId == 440 || response.data.info.queueId == 490) count++;
+            rankedSortW((await rankedCleanW(response.data, region, minor_inst)), region, `${dir}/${patch}/${region}`)
+            count++;
             if(count > 30000) return;
-            // fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, JSON.stringify(response.data), {flag: "w"});
-            
             ID += 1;
+            yesterday = moment().subtract(24, 'hours').unix()
         }catch(error){
             if(!error.response){
                 console.error(error)

@@ -225,8 +225,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
     for(let rank in pages){
         if(min_page > pages[rank]) min_page = pages[rank]
     }
-    let lastPlayer: string | undefined = undefined
-    let recovery: boolean = false
+
     let itt = 0;
     while(true){
         try{
@@ -240,6 +239,10 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     let playerResponse = await minor_inst.get(`/lol/league/v4/entries/RANKED_SOLO_5x5/${rank}/${subrank}?page=${pages[`${rank}${subrank}`]}`)
                     console.log(`${playerResponse.data.length} players found!`)
                     for(itt; itt <  playerResponse.data.length; ++itt){
+                        if(playerResponse.data.length <= itt){
+                            itt = 0;
+                            break;
+                        }
                         let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${playerResponse.data[itt]['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
                         if(gamesResponse.data.length == 0){
                             console.log(`No games were found [${itt}/${playerResponse.data.length}]`)
@@ -258,9 +261,9 @@ export default async function getRanked(arg: string, opt: Array<string>){
                         yesterday = moment().subtract(24, 'hours').unix()
                         console.log(`Done with player [${itt}/${playerResponse.data.length}]`)
                     }
-                    console.log(`finished ${rank} ${subrank} page ${pages[`${rank}${subrank}`]}`)
                     pages[`${rank}${subrank}`]++
                     fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, `{\"last_page\": ${(pages[`${rank}${subrank}`])}}`)
+                    console.log(`finished ${rank} ${subrank} page ${pages[`${rank}${subrank}`]}`)
                     itt = 0;
                     
                 }catch(error){
