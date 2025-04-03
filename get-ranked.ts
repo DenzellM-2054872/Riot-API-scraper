@@ -4,7 +4,7 @@ import fs from 'fs';
 import {sortW, cleanW, rankedSortW, rankedCleanW} from './sort-clean';
 import moment from 'moment';
 
-let yesterday: number = moment().subtract(12, 'hours').unix()
+let yesterday: number = moment().subtract(24, 'hours').unix()
 
 const ranks = [
     "IRON",
@@ -124,7 +124,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                     rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                 }
-                yesterday = moment().subtract(12, 'hours').unix()
+                yesterday = moment().subtract(24, 'hours').unix()
             }
             fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": -1}")
             break
@@ -176,7 +176,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                         if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                         rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                     }
-                    yesterday = moment().subtract(12, 'hours').unix()
+                    yesterday = moment().subtract(24, 'hours').unix()
                 }
                 fs.writeFileSync(`${dir}/${patch}/${region}/MASTER_page.json`, "{\"last_page\": -1}")
                 break
@@ -208,7 +208,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
             }
         }
     }
-    
+    console.log('done with apex ranks')
     let pages = {}
     for(let rank of ranks){
         for(let subrank of subranks){
@@ -227,8 +227,9 @@ export default async function getRanked(arg: string, opt: Array<string>){
     }
     let lastPlayer: string | undefined = undefined
     let recovery: boolean = false
-
+    let itt = 0;
     while(true){
+        try{
         for(let rank of ranks){
             for(let subrank of subranks){
                 if(pages[`${rank}${subrank}`] > min_page){
@@ -236,20 +237,17 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     continue;
                 }
                 try{
-                    
                     let playerResponse = await minor_inst.get(`/lol/league/v4/entries/RANKED_SOLO_5x5/${rank}/${subrank}?page=${pages[`${rank}${subrank}`]}`)
-                    for(let player of playerResponse.data){
-                        if(recovery && player['puuid'] != lastPlayer){
-                            console.log(`skipping player`)
+                    console.log(`${playerResponse.data.length} players found!`)
+                    for(itt; itt <  playerResponse.data.length; ++itt){
+                        let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${playerResponse.data[itt]['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
+                        if(gamesResponse.data.length == 0){
+                            console.log(`No games were found [${itt}/${playerResponse.data.length}]`)
                             continue
-                        }
-
-                        recovery = false
-                        lastPlayer = player['puuid']
-                        let gamesResponse = await major_inst.get(`/lol/match/v5/matches/by-puuid/${player['puuid']}/ids?startTime=${yesterday}&queue=420&start=0&count=5`)
+                        } 
                         for(let game of gamesResponse.data){
                             if(fs.existsSync(`${dir}/${patch}/${region}/games/overview_${game}.json`)){
-                                console.log("Dupe game found!")
+                                console.log('dupe game found')
                                 continue
                             }
                             console.log(`collecting ${game}`)
@@ -257,12 +255,13 @@ export default async function getRanked(arg: string, opt: Array<string>){
                             if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
                             rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                         }
-                         yesterday = moment().subtract(12, 'hours').unix()
+                        yesterday = moment().subtract(24, 'hours').unix()
+                        console.log(`Done with player [${itt}/${playerResponse.data.length}]`)
                     }
-                    lastPlayer = undefined
                     console.log(`finished ${rank} ${subrank} page ${pages[`${rank}${subrank}`]}`)
                     pages[`${rank}${subrank}`]++
                     fs.writeFileSync(`${dir}/${patch}/${region}/${rank}${subrank}_page.json`, `{\"last_page\": ${(pages[`${rank}${subrank}`])}}`)
+                    itt = 0;
                     
                 }catch(error){
                     if(!error.response){
@@ -280,12 +279,13 @@ export default async function getRanked(arg: string, opt: Array<string>){
                     }
                     if(error.response.status == 429){
                         console.log("overloaded the api restarting page")
-                        recovery = true
+                        itt--
                         continue;
                     }
                     if(error.response.status == 504){
                         console.log("idk what this one is")
                         await new Promise(f => setTimeout(f, 1000))
+                        itt--
                         continue;
                     }
                     console.error(error.response.data)
@@ -293,6 +293,31 @@ export default async function getRanked(arg: string, opt: Array<string>){
             }
         }
         min_page++
+        }catch(error){
+            if(!error.response){
+                console.error(error)
+                return;
+            }
+            if(error.response.status == 400){
+                console.error(error.response.data)
+                console.log("get a new key");
+                return;
+            }
+            if(error.response.status == 404){
+                console.error(error.response.data)
+                continue;
+            }
+            if(error.response.status == 429){
+                console.log("overloaded the api restarting rank")
+                continue;
+            }
+            if(error.response.status == 504){
+                console.log("idk what this one is")
+                await new Promise(f => setTimeout(f, 1000))
+                continue;
+            }
+            console.error(error.response.data)
+        }
     }
     console.log(`Done!`)
 }
