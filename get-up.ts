@@ -117,11 +117,15 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
 
             let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
-            if(response.data['info']['gameCreation'] < yesterday){
+            if(response.data['info']['gameCreation'] > yesterday){
                 console.log("Making a biiig jump!")
                 ID += 100
+                continue
             }
-
+            if(response.data['info']['gameCreation'] >  moment().subtract(12, 'hours').unix()){
+                console.log("Making a smaller jump!")
+                ID += 50
+            }
             if(response.data['info']['queueId'] != 420){
                 console.log("*comedicaly loud buzzer noise*")
                 ID += 1;
