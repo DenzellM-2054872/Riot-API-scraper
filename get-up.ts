@@ -129,7 +129,21 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
 
             console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);
-            rankedSortW((await rankedCleanW(response.data, region, minor_inst)), region, `${dir}/${patch}/${region}`)
+            try{
+                while(true){
+                    rankedSortW((await rankedCleanW(response.data, region, minor_inst)), region, `${dir}/${patch}/${region}`)
+                    break
+                }
+            }catch(error){
+                if(!error.response){
+                    console.error(error)
+                    return;
+                }
+                if(error.response.status == 429){
+                    console.log("overloaded the api restarting rank")
+                    continue;
+                }
+            }
             count++;
             if(count > 30000) return;
             ID += 1;
