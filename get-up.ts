@@ -92,11 +92,7 @@ export default async function getUp(arg: string, opt: Array<string>){
         files = files.concat(content.filter(dirent => dirent.isFile()))
     }
 
-    let count = 0
-    for(let file of content){
-        let data = JSON.parse(fs.readFileSync(`${file.parentPath}/${file.name}`, {encoding: "utf-8"}))
-        if(data["info"]["queueId"] == 400 || data["info"]["queueId"] == 420 || data["info"]["queueId"] == 440 || data["info"]["queueId"] == 490) count++;
-    }
+    let count = content.length
 
     if(!ID){
         content.sort(((a, b) => {
@@ -131,7 +127,7 @@ export default async function getUp(arg: string, opt: Array<string>){
                 console.log("Making a small jump!")
                 ID += 10000
             }else if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(1, 'hours'))){
-                console.log("Making a small jump!")
+                console.log("Making a tiny jump!")
                 ID += 5000
             }
 
