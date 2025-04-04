@@ -119,15 +119,18 @@ export default async function getUp(arg: string, opt: Array<string>){
             let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
             if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(24, 'hours'))){
                 console.log("Making a biiig jump!")
-                ID += 100000
+                ID += 500000
                 continue
             }
             
             if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(12, 'hours'))){
                 console.log("Making a smaller jump!")
-                ID += 10000
+                ID += 100000
             }
             else if (!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(8, 'hours'))){
+                console.log("Making a small jump!")
+                ID += 10000
+            }else if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(1, 'hours'))){
                 console.log("Making a small jump!")
                 ID += 5000
             }
