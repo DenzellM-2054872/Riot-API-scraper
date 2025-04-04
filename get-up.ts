@@ -117,22 +117,28 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
 
             let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
-            if(response.data['info']['gameCreation'] < yesterday){
+            if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(24, 'hours'))){
                 console.log("Making a biiig jump!")
-                ID += 100
+                ID += 100000
                 continue
             }
-            if(response.data['info']['gameCreation'] <  moment().subtract(12, 'hours').unix()){
+            
+            if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(12, 'hours'))){
                 console.log("Making a smaller jump!")
-                ID += 50
+                ID += 10000
             }
+            else if (!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(8, 'hours'))){
+                console.log("Making a small jump!")
+                ID += 5000
+            }
+
             if(response.data['info']['queueId'] != 420){
                 console.log("*comedicaly loud buzzer noise*")
                 ID += 1;
                 continue;
             }
 
-            console.log(`Game ${response.data['metadata']['matchId']} Found!(${count}/30000 [${Math.floor(count/300)}%])`);
+            console.log(`${response.data['metadata']['matchId']}: ${moment(response.data['info']['gameCreation']).fromNow()}(${count}/30000 [${Math.floor(count/300)}%])`);
             try{
                 while(true){
                     rankedSortW((await rankedCleanW(response.data, region, minor_inst)), region, `${dir}/${patch}/${region}`)
