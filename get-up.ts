@@ -121,7 +121,7 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
 
             if(response.data['info']['queueId'] == 420){
-                fs.writeFileSync(`${dir}/${patch}/${region}/overview_${response.data['info']['gameId']}.json`, "")
+                fs.writeFileSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`, "")
             }
 
             
