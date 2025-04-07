@@ -102,7 +102,8 @@ export default async function getUp(arg: string, opt: Array<string>){
         }));
         ID = Number(content[content.length - 1].name.replace(`overview_${region}_`, "").replace(".json", ""));
     }
-
+    let failCounter = 0;
+    let maxFails = 30;
     if(count >= 30000) return;
     while(true){
         try{
@@ -113,7 +114,9 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
 
             let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
-
+            failCounter = 0;
+            maxFails = 30;
+            
             if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
                 console.log(`overview_${region}_${ID} someone else was first!`);
                 ID += 1;
@@ -185,8 +188,18 @@ export default async function getUp(arg: string, opt: Array<string>){
                 return;
             }
             if(error.response.status == 404){
-                ID += 1;
-                process.stdout.write(`.`);
+                if(failCounter > maxFails){
+                    console.log("waiting for these slowpokes to finish more games")
+                    //wait for five minutes
+                    await new Promise(f => setTimeout(f, 300000))
+                    ID -= failCounter
+                    maxFails *= 2
+                    failCounter = 0
+                }else{
+                    ID += 1;
+                    failCounter++;
+                    process.stdout.write(`.`);
+                }
                 continue;
             }
             if(error.response.status == 400){
