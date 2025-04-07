@@ -106,13 +106,26 @@ export default async function getUp(arg: string, opt: Array<string>){
     if(count >= 30000) return;
     while(true){
         try{
-            if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
+            if(fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
                 console.log(`overview_${region}_${ID} alredy exists!`);
                 ID += 1;
                 continue;
             }
 
             let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
+            
+            if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
+                console.log(`overview_${region}_${ID} someone else was first!`);
+                ID += 1;
+                continue;
+            }
+
+            if(response.data['info']['queueId'] == 420){
+                fs.writeFileSync(`${dir}/${patch}/${region}/${response.data['info']['gameId']}.json`, "")
+            }
+
+            
+            console.log()
             if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(24, 'hours'))){
                 console.log("Making a biiig jump!")
                 ID += 500000
@@ -125,10 +138,19 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
             else if (!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(8, 'hours'))){
                 console.log("Making a small jump!")
-                ID += 10000
+                if(region == 'OC1'){
+                    ID += 1000
+                }else{
+                    ID += 10000
+                }
+                
             }else if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(1, 'hours'))){
                 console.log("Making a tiny jump!")
-                ID += 5000
+                if(region == 'OC1'){
+                    ID += 50
+                }else{
+                    ID += 5000
+                }
             }
 
             if(response.data['info']['queueId'] != 420){
@@ -164,6 +186,7 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
             if(error.response.status == 404){
                 ID += 1;
+                process.stdout.write(`.`);
                 continue;
             }
             if(error.response.status == 400){
@@ -171,6 +194,7 @@ export default async function getUp(arg: string, opt: Array<string>){
                 return;
             }
             if(error.response.status == 429){
+                
                 console.log("overloaded the api whoops!")
                 continue;
             }
