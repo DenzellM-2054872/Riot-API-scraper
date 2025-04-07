@@ -113,7 +113,7 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
 
             let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
-            
+
             if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
                 console.log(`overview_${region}_${ID} someone else was first!`);
                 ID += 1;
@@ -121,7 +121,7 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
 
             if(response.data['info']['queueId'] == 420){
-                fs.writeFileSync(`${dir}/${patch}/${region}/${response.data['info']['gameId']}.json`, "")
+                fs.writeFileSync(`${dir}/${patch}/${region}/overview_${response.data['info']['gameId']}.json`, "")
             }
 
             
