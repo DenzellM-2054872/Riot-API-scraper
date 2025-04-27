@@ -96,8 +96,8 @@ export default async function getTL(arg: string, opt: Array<string>){
                 continue;
             }
 
-            fs.writeFileSync(`${files[i].parentPath.replace('overview', 'timeline')}/${files[i].name.replace('overview', 'timeline')}`,'')
             let response = await inst.get(`/lol/match/v5/matches/${region}_${ID}/timeline`);
+            fs.writeFileSync(`${files[i].parentPath.replace('overview', 'timeline')}/${files[i].name.replace('overview', 'timeline')}`,'')
 
             console.log(`Game ${response.data['metadata']['matchId']} Found! Found!(${i}/${files.length}) [${Math.floor(i/(files.length/100))}%]`);
     
