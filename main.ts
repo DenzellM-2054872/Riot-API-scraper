@@ -29,7 +29,7 @@ program.command("get-tl")
     .argument("<region>", "the region you want to collect the games of")
     .option("-r, --readDir [path]", "the directory to which to write the files", "overview/")
     .option("-w, --writeDir [path]", "the directory to which to write the files", "timeline/")
-    .option("-p, --patch [patch]", "the patch nr of games you want to collect", "15.4")
+    .option("-p, --patch [patch]", "the patch nr of games you want to collect", "15.7")
     .option("-t, --token [path]", "the file for your api token", "api_key.txt")
     .action((str, options) => {getTL(str, options)});
 

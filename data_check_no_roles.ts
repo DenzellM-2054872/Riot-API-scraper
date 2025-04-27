@@ -3,10 +3,10 @@ import {keys} from './championFull.json'
 import {data} from './championFull.json'
 import type { ChampType } from './ChampionTypes'
 let data_folder = "overview/15.4"
-let game_data: {[game_type: string]: object[]} = {}
-let champs: {[gameMode: string]: {[champ: string]:  {"games": number, "wins": number, "losses": number, bans: number}}} = {}
-let globalWR: {[gameMode: string]: {[champ: string]: {[oppChamp: string]: {"games": number, "wins": number, "losses": number}}}} = {}
-let laneWR: {[gameMode: string]: {[champ: string]: {[oppChamp: string]: {"games": number, "wins": number, "losses": number}}}} = {}
+let game_data: object[] = []
+let champs: {[champ: string]:  {"games": number, "wins": number, "losses": number, bans: number, effectiveBans: 0}} = {}
+let globalWR: {[champ: string]: {[oppChamp: string]: {"games": number, "wins": number, "losses": number}}} = {}
+let laneWR: {[champ: string]: {[oppChamp: string]: {"games": number, "wins": number, "losses": number}}} = {}
 let content = fs.readdirSync(data_folder, { withFileTypes: true })
 
 interface KeysType{
@@ -61,105 +61,76 @@ function guessRole(player: Object, players: Object[]){
     return roles[0];
 }
 
-function globalInit(){
-    if(!champs['global']) champs['global'] = {};
-    if(!globalWR['global']) globalWR['global'] = {}
-    if(!laneWR['global']) laneWR['global'] = {}
+function addChampWinrate(champ: string, win: boolean){
+
+    if(!champs[champ]) champs[champ] = {wins: 0, losses: 0, games: 0, bans: 0, effective_bans: 0}
+    if(!champs[champ]) champs[champ]= {wins: 0, losses: 0, games: 0, bans: 0, effective_bans: 0}
+
+    champs[champ].games++
+    if(win) champs[champ].wins++
+    else champs[champ].losses++
 }
 
-function init(mode: string){
-    if(!champs[mode]) champs[mode] = {};
-    if(!globalWR[mode]) globalWR[mode] = {}
-    if(!laneWR[mode]) laneWR[mode] = {}
-}
-function addChampWinrate(champ: string, gameMode: string, win: boolean){
-
-    if(!champs[gameMode][champ]) champs[gameMode][champ] = {wins: 0, losses: 0, games: 0, bans: 0}
-    if(!champs['global'][champ]) champs['global'][champ]= {wins: 0, losses: 0, games: 0, bans: 0}
-
-    champs[gameMode][champ].games++
-    if(win) champs[gameMode][champ].wins++
-    else champs[gameMode][champ].losses++
-
-    champs['global'][champ].games++
-    if(win) champs['global'][champ].wins++
-    else champs['global'][champ].losses++
+function addChampBan(champ: string, bans: Array<string>){
+    if(!champs[champ]) champs[champ] = {wins: 0, losses: 0, games: 0, bans: 0, effective_bans: 0}
+    champs[champ].bans++
+    if(!bans.includes(champ)){
+        champs[champ].effective_bans++
+    }
 }
 
-function addChampBan(champ: string, gameMode: string){
+function addGlobalWinrate(champ: string, opp_champ: string, win: boolean){
+    if(!globalWR[champ]) globalWR[champ] = {}
+    if(!globalWR[champ][opp_champ]) globalWR[champ][opp_champ] = {"wins": 0, "losses": 0, "games": 0}
 
-    if(!champs[gameMode][champ]) champs[gameMode][champ] = {wins: 0, losses: 0, games: 0, bans: 0}
-    if(!champs['global'][champ]) champs['global'][champ]= {wins: 0, losses: 0, games: 0, bans: 0}
-
-    champs[gameMode][champ].bans++
-    champs['global'][champ].bans++
-
+    globalWR[champ][opp_champ].games++
+    if(win) globalWR[champ][opp_champ].wins++
+    else globalWR[champ][opp_champ].losses++
 }
 
-function addGlobalWinrate(champ: string, opp_champ: string, gameMode: string, win: boolean){
-    if(!globalWR[gameMode][champ]) globalWR[gameMode][champ] = {}
-    if(!globalWR['global'][champ]) globalWR['global'][champ] = {}
+function addLaneWinrate(champ: string, opp_champ: string, win: boolean){
+    if(!laneWR[champ]) laneWR[champ] = {}
+    if(!laneWR[champ][opp_champ]) laneWR[champ][opp_champ] = {"wins": 0, "losses": 0, "games": 0}
 
-    if(!globalWR[gameMode][champ][opp_champ]) globalWR[gameMode][champ][opp_champ] = {"wins": 0, "losses": 0, "games": 0}
-    if(!globalWR['global'][champ][opp_champ]) globalWR['global'][champ][opp_champ] = {"wins": 0, "losses": 0, "games": 0}
-
-    globalWR[gameMode][champ][opp_champ].games++
-    if(win) globalWR[gameMode][champ][opp_champ].wins++
-    else globalWR[gameMode][champ][opp_champ].losses++
-
-    globalWR['global'][champ][opp_champ].games++
-    if(win) globalWR['global'][champ][opp_champ].wins++
-    else globalWR['global'][champ][opp_champ].losses++
+    laneWR[champ][opp_champ].games++
+    if(win) laneWR[champ][opp_champ].wins++
+    else laneWR[champ][opp_champ].losses++
 }
 
-function addLaneWinrate(champ: string, opp_champ: string, gameMode: string, win: boolean){
-    if(!laneWR[gameMode][champ]) laneWR[gameMode][champ] = {}
-    if(!laneWR['global'][champ]) laneWR['global'][champ] = {}
-
-    if(!laneWR[gameMode][champ][opp_champ]) laneWR[gameMode][champ][opp_champ] = {"wins": 0, "losses": 0, "games": 0}
-    if(!laneWR['global'][champ][opp_champ]) laneWR['global'][champ][opp_champ] = {"wins": 0, "losses": 0, "games": 0}
-
-    laneWR[gameMode][champ][opp_champ].games++
-    if(win) laneWR[gameMode][champ][opp_champ].wins++
-    else laneWR[gameMode][champ][opp_champ].losses++
-
-    laneWR['global'][champ][opp_champ].games++
-    if(win) laneWR['global'][champ][opp_champ].wins++
-    else laneWR['global'][champ][opp_champ].losses++
-}
-globalInit();
 for(let region of dirs){
     console.log(`reading: ${region} data!`)
 
     let types = fs.readdirSync(`${data_folder}/${region}/`, { withFileTypes: true })
+    game_data = [];
     for (let game_type of types){
         if(game_type.name != "5v5 Draft Pick" && game_type.name != "5v5 Ranked Flex" && game_type.name != "5v5 Ranked Solo") continue;
-        game_data[game_type.name] = [];
+        
         let files = fs.readdirSync(`${data_folder}/${region}/${game_type.name}/`, { withFileTypes: true })
         for(let file of files){
-            game_data[game_type.name].push(JSON.parse(fs.readFileSync(`${data_folder}/${region}/${game_type.name}/${file.name}`, {encoding: "utf-8"})))
+            game_data.push(JSON.parse(fs.readFileSync(`${data_folder}/${region}/${game_type.name}/${file.name}`, {encoding: "utf-8"})))
         }
 
-        for(let mode in game_data){
-            init(mode)
-            for(let game of game_data[mode]){
-                for(let team of game['info']['teams']){
-                    for(let champ of team['bans']){
-                        addChampBan(nameFromID(champ['championId']), mode)
+
+        for(let game of game_data){
+            let banned: Array<string> = []
+            for(let team of game['info']['teams']){
+                for(let champ of team['bans']){
+                    addChampBan(nameFromID(champ['championId']), banned)
+                    banned.push(nameFromID(champ['championId']))
+                }
+            }
+
+            for(let player of game['info']['participants']){
+                addChampWinrate(player['championName'], player['win'])
+                for(let opp of game['info']['participants']){
+                    if(player['teamId'] == opp['teamId']) continue;
+                    addGlobalWinrate(player['championName'], opp['championName'], player['win'])
+                    if(guessRole(player, game['info']['participants']) == guessRole(opp, game['info']['participants'])){
+                        addLaneWinrate(player['championName'], opp['championName'], player['win'])
                     }
                 }
-                for(let player of game['info']['participants']){
-                    addChampWinrate(player['championName'], mode, player['win'])
-                    for(let opp of game['info']['participants']){
-                        if(player['teamId'] == opp['teamId']) continue;
-                        addGlobalWinrate(player['championName'], opp['championName'], mode, player['win'])
-                        if(guessRole(player, game['info']['participants']) == guessRole(opp, game['info']['participants'])){
-                            addLaneWinrate(player['championName'], opp['championName'], mode, player['win'])
-                        }
-                    }
-                } 
-            }
-        }
+            } 
+        } 
     }
     console.log("Data processed")
 }
@@ -168,28 +139,7 @@ console.log("All data read!")
 
 
 
-for(let mode in champs){
-    fs.writeFileSync(`data/${mode}_wbpr.csv`, `Name,Games,Wins,Losses,Bans,WR\n`, {flag: "w+"})
-    for(let champ in champs[mode]){
-        fs.writeFileSync(`data/${mode}_wbpr.csv`,`${champ},${champs[mode][champ].games},${champs[mode][champ].wins},${champs[mode][champ].losses},${champs[mode][champ].bans},${Math.round((champs[mode][champ].wins / champs[mode][champ].games) * 10000) / 100}\n`, {flag: "a+"})
-    }
-}
 
-for(let mode in globalWR){
-    fs.writeFileSync(`data/${mode}_globalWR.csv`, `Name,Opponent,Games,Wins,Losses,WR\n`, {flag: "w+"})
-    for(let champ in globalWR[mode]){
-            for(let opp in globalWR[mode][champ]){
-                fs.writeFileSync(`data/${mode}_globalWR.csv`,`${champ},${opp},${globalWR[mode][champ][opp].games},${globalWR[mode][champ][opp].wins},${globalWR[mode][champ][opp].losses},${Math.round((globalWR[mode][champ][opp].wins / globalWR[mode][champ][opp].games) * 10000) / 100}\n`, {flag: "a+"})
-            }
-        
-    }
-}
-
-for(let mode in laneWR){
-    fs.writeFileSync(`data/${mode}_laneWR.csv`, `Name,Opponent,Games,Wins,Losses,WR\n`, {flag: "w+"})
-    for(let champ in laneWR[mode]){
-        for(let opp in globalWR[mode][champ]){
-            fs.writeFileSync(`data/${mode}_laneWR.csv`,`${champ},${opp},${globalWR[mode][champ][opp].games},${globalWR[mode][champ][opp].wins},${globalWR[mode][champ][opp].losses},${Math.round((globalWR[mode][champ][opp].wins / globalWR[mode][champ][opp].games) * 10000) / 100}\n`, {flag: "a+"})
-        }
-    }
-}
+fs.writeFileSync(`data/wbpr.json`, JSON.stringify(champs), {flag: "w+"})
+fs.writeFileSync(`data/globalWR.json`, JSON.stringify(globalWR), {flag: "w+"})
+fs.writeFileSync(`data/laneWR.json`, JSON.stringify(laneWR), {flag: "w+"})

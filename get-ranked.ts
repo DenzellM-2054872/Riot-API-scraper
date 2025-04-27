@@ -173,7 +173,7 @@ export default async function getRanked(arg: string, opt: Array<string>){
                         }
                         console.log(`collecting ${game}`)
                         let gameResponse = await major_inst.get(`/lol/match/v5/matches/${game}`)
-                        if(!(gameResponse.data.info.gameVersion as string).startsWith('15.7')) continue;
+                        
                         rankedSortW((await rankedCleanW(gameResponse.data, region, minor_inst)), region, `${dir}/${patch}/${region}/games`)
                     }
                     yesterday = moment().subtract(24, 'hours').unix()

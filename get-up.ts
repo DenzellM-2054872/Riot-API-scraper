@@ -115,8 +115,8 @@ export default async function getUp(arg: string, opt: Array<string>){
 
             let response = await major_inst.get(`/lol/match/v5/matches/${region}_${ID}`);
             failCounter = 0;
-            maxFails = 30;
-            
+            maxFails = 50;
+
             if (fs.existsSync(`${dir}/${patch}/${region}/overview_${region}_${ID}.json`)){
                 console.log(`overview_${region}_${ID} someone else was first!`);
                 ID += 1;
@@ -131,7 +131,11 @@ export default async function getUp(arg: string, opt: Array<string>){
             console.log()
             if(!moment(response.data['info']['gameCreation']).isAfter(moment().subtract(24, 'hours'))){
                 console.log("Making a biiig jump!")
-                ID += 500000
+                if(region == 'OC1' || region == 'JP1' || region == 'LA1'){
+                    ID += 50000
+                }else{
+                    ID += 500000
+                }
                 continue
             }
             
@@ -189,12 +193,14 @@ export default async function getUp(arg: string, opt: Array<string>){
             }
             if(error.response.status == 404){
                 if(failCounter > maxFails){
-                    console.log("waiting for these slowpokes to finish more games")
+                    console.log(`waiting for these slowpokes to finish more games ${failCounter}`)
                     //wait for five minutes
                     await new Promise(f => setTimeout(f, 300000))
                     ID -= failCounter
                     maxFails *= 2
                     failCounter = 0
+                    console.log(`continueing ${ID} [${maxFails}]`)
+
                 }else{
                     ID += 1;
                     failCounter++;
